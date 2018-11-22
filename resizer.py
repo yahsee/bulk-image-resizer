@@ -1,4 +1,4 @@
-def resize(img, box, fit, out):
+def resize(img, box, fit, out, quality):
     '''Downsample the image.
     @param img: Image -  an Image-object
     @param box: tuple(x, y) - the bounding box of the result image
@@ -13,7 +13,7 @@ def resize(img, box, fit, out):
     if factor > 1:
         img.thumbnail((img.size[0]/factor, img.size[1]/factor), Image.NEAREST)
 
-    #calculate the cropping box and get the cropped part
+    #calculate cropping box and get cropped part
     if fit:
         x1 = y1 = 0
         x2, y2 = img.size
@@ -27,87 +27,69 @@ def resize(img, box, fit, out):
             x2 = int(x2/2+box[0]*hRatio/2)
         img = img.crop((x1,y1,x2,y2))
 
-    #Resize the image with best quality algorithm ANTI-ALIAS
+    #Resize image with best quality algorithm ANTIALIAS
     img.thumbnail(box, Image.ANTIALIAS)
 
-    #save it into a file-like object
-    img.save(out, "JPEG", quality=95)
-#resize
+    #save into a file-like object
+    img.save(out, "JPEG", quality=quality)
+
+def run(grey,useratio,suffix):
+    try:
+        if grey == '1':
+            img = Image.open(filename).convert('L')
+        else:
+            img = Image.open(filename)
+        if useratio == '1':
+            x3, y3 = img.size
+            box = (x3, x3*ratio)
+        else:
+            box = (x,y)
+    except:
+        print('File not found or could not be opened')
+        return
+    if len(suffix)>0:
+        out = filename.split('.')[0] + '_' + suffix + '.jpg'
+    else:
+        out = filename.split('.')[0] + '_resized.jpg'
+    #file(os.path.splitext(filename)[0]+"_thumb.jpg", "w")
+    try:
+        resize(img,box,fit,out,quality)
+        print ('***', out, 'exported successfully')
+    except: print('Resize failed')
 
 
 from PIL import Image
 import os, sys
 
-x = float(input ('resize x dimension: '))
-y = float(input ('resize y dimension: '))
+print('Dimensions can be entered as fixed number of pixels or a ratio.')
+x = float(input ('new x dimension: '))
+y = float(input ('new y dimension: '))
 ratio = y/x
-useratio = input('maintain max x dimension and use resize ratio (1 = Yes): ')
+useratio = input('maintain original x dimension (if larger than new x dimension) and use resize ratio to crop (1 = Yes): ')
 fit = 1
-suffix = input('add suffix to filename: ')
-suffix2 = ''
+suffix = input('add suffix to filename (default is "resized"): ')
 grey = input('greyscale? 1 = Yes: ')
 folder = input('all images in folder (1)?: ')
+quality = input('jpeg quality (1-100, default=95): ')
+try:
+    quality = int(quality)
+    if quality not in range(1,100):
+        print("Value out of range - default will be used")
+        quality=95
+except:
+    print("No valid value entered - default will be used")
+    quality = 95
 
 # single image files
 if folder != '1':
     while True:
         filename = input('image filename: ')
         if len(filename)<1: quit()
-        try:
-            if grey == '1':
-                img = Image.open(filename).convert('L')
-                suffix2 = suffix + '_greyscale'
-            else:
-                img = Image.open(filename)
-                #print('not greyscale')
-            if useratio == '1':
-                x3, y3 = img.size
-                box = (x3, x3*ratio)
-                suffix2 = suffix + '_' + str(ratio)
-            else:
-                box = (x,y)
-                suffix2 = suffix + '_' + str(int(x)) + '-' + str(int(y))
-        except:
-            Print('File not found or could not be opened')
-            continue
-        if len(suffix)>0:
-            out = filename.split('.')[0] + '_' + suffix2 + '.jpg'
-        else:
-            out = filename.split('.')[0] + suffix2 + '.jpg'
-        #file(os.path.splitext(filename)[0]+"_thumb.jpg", "w")
-        try:
-            resize(img,box,fit,out)
-            print ('***', out, 'exported successfully')
-        except: print('Resize failed')
+        run(grey,useratio,suffix)
 
 # load folder of images
 if folder == '1':
     for filename in os.listdir('.'):
         if not (filename.endswith('.jpeg') or filename.endswith('.jpg')) :
             continue # skip non-jpeg image files
-        try:
-            if grey == '1':
-                img = Image.open(filename).convert('L')
-                suffix = suffix + '_greyscale'
-            else:
-                img = Image.open(filename)
-                #print('not greyscale')
-            if useratio == '1':
-                x3, y3 = img.size
-                box = (x3, x3*ratio)
-                suffix2 = suffix + '_' + str(ratio)
-            else:
-                box = (x,y)
-                suffix2 = suffix + '_' + str(int(x)) + '-' + str(int(y))
-        except:
-            Print('File not found or could not be opened')
-            continue
-        if len(suffix)>0:
-            out = filename.split('.')[0] + '_' + suffix2 + '.jpg'
-        else:
-            out = filename.split('.')[0] + suffix2 + '.jpg'
-        #file(os.path.splitext(filename)[0]+"_thumb.jpg", "w")
-        try:
-            resize(img,box,fit,out)
-            print ('***', out, 'exported successfully')
-        except: print('Resize failed')
+        run(grey,useratio,suffix)
